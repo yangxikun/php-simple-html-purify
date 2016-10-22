@@ -3,6 +3,7 @@ A php simple html purify. This library doesn't apply any HTML specification. You
 
 ### How it works
 
+```
                  +-----------+
                  | dirtyHtml |
                  +-----+-----+
@@ -47,6 +48,7 @@ No|      |                             |     |
              +---------v----------+
              | generate cleanHtml |
              +--------------------+
+```
 
 ### example
 

@@ -10,20 +10,25 @@ class Attribute
 
     protected $regex;
 
-    protected $value;
-
     /**
      * @param string|array $names attribute name
      * @param bool|false $regex if true, $names will be used as regular expressions
      * @param Tag|null $tag belong to which tag
-     * @param AttributeValue|null $value
      */
-    public function __construct($names, $regex = false, Tag $tag = null, AttributeValue $value = null)
+    public function __construct($names, $regex = false, Tag $tag = null)
     {
         $this->names  = is_array($names) ? $names : [$names];
         $this->tag   = is_null($tag) ? new Tag('*') : $tag;
         $this->regex = $regex;
-        $this->value = $value;
+    }
+
+    public function tagMatch($tagName)
+    {
+        if ($this->tag && !$this->tag->match($tagName)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -47,32 +52,5 @@ class Attribute
         }
 
         return false;
-    }
-
-    /**
-     * @param \DOMElement $node
-     * @param bool $black Is it in blacklist rule
-     */
-    public function filter(\DOMElement $node, $black)
-    {
-        if ($this->tag->match($node->tagName)) {
-            $removeAttrs = [];
-            foreach ($node->attributes as $attr) {
-                if ($this->match($attr->name)) {
-                    if ($this->value) {
-                        $this->value->filter($attr, $black);
-                    } else {
-                        if ($black && !$this->value) {
-                            $removeAttrs[] = $attr->name;
-                        }
-                    }
-                } elseif (!$black && !$this->value) {
-                    $removeAttrs[] = $attr->name;
-                }
-            }
-            foreach ($removeAttrs as $attr) {
-                $node->removeAttribute($attr);
-            }
-        }
     }
 }

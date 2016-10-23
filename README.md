@@ -2,7 +2,6 @@
 A php simple html purify. This library doesn't apply any HTML specification. You should configure all rules by yourself.
 
 ### How it works
-
                  +-----------+
                  | dirtyHtml |
                  +-----+-----+
@@ -34,9 +33,23 @@ No|      |                             |     |
        +---------------+-----------------+   |
                        |                     |
                        |                     |
-             +-------------------+           |
-             | collect valid tag |           |
-             +-------------------+           |
+                       +                     |
+  +-----------+if attribute was keep         |
+  |                    +                     |
+  |                    | Yes                 |
+  |   +----------------v-------------------+ |
+  |   |apply AttributeValue BalckList rules| |
+No|   |                                    | |
+  |   |                                    | |
+  |   |                                    | |
+  |   |apply AttributeValue WhiteList rules| |
+  |   +----------------+-------------------+ |
+  |                    |                     |
+  |                    |                     |
+  |                    v                     |
+  |          +---------+---------+           |
+  +---------^+ collect valid tag |           |
+             +---------+---------+           |
                        |                     | No
                        |                     |
                        +                     |
@@ -47,6 +60,7 @@ No|      |                             |     |
              +---------v----------+
              | generate cleanHtml |
              +--------------------+
+
 
 ### example
 
@@ -92,12 +106,12 @@ Filter attribute value:
 ```php
 $dirtyHtml = '<div style="color: #080808;position: absolute" class="data-content"><p style="color: #101010">Hello World</p></div>';
 $htmlPurifier = new Purifier();
-$htmlPurifier->attrBlackList(new Attribute('style', false, null, new AttributeValue('/position *: *absolute;?/', true)));//add style to attribute blacklist, apply to all tag
+$htmlPurifier->attrValueBlackList(new AttributeValue('/position *: *absolute;?/', true, new Attribute('style')));//add style to attributeValue blacklist, apply to all tag
 echo $htmlPurifier->purify($dirtyHtml);//output: <div style="color: #080808;"  class="data-content" ><p style="color: #101010" >Hello World</p></div>
 
 $dirtyHtml = '<div style="color: #080808;position: absolute" class="data-content"><p style="color: #101010;font-size: 12px">Hello World</p></div>';
 $htmlPurifier = new Purifier();
-$htmlPurifier->attrWhiteList(new Attribute('style', false, new Tag('*'), new AttributeValue(['/color: *#\d+;?/', '/font-size: *\d+px;?/'], true)));//add style to attribute whitelist, apply to all tag
+$htmlPurifier->attrValueWhiteList(new AttributeValue(['/color: *#\d+;?/', '/font-size: *\d+px;?/'], true, new Attribute('style', false, new Tag('div'))));//add style to attribute whitelist, apply to div tag
 echo $htmlPurifier->purify($dirtyHtml);//output: <div style="color: #080808;"  class="data-content" ><p style="color: #101010; font-size: 12px" >Hello World</p></div>
 ```
 

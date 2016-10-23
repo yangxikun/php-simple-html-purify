@@ -36,6 +36,9 @@ class Purifier
     protected $attrBlackList = [];
     protected $attrWhiteList = [];
 
+    protected $attrValueBlackList = [];
+    protected $attrValueWhiteList = [];
+
     /**
      * Add Tag to BlackList
      *
@@ -76,6 +79,26 @@ class Purifier
         $this->attrWhiteList[] = $attr;
     }
 
+    /**
+     * Add attrValue to BlackList
+     *
+     * @param AttributeValue $attrValue
+     */
+    public function attrValueBlackList(AttributeValue $attrValue)
+    {
+        $this->attrValueBlackList[] = $attrValue;
+    }
+
+    /**
+     * Add attrValue to WhiteList
+     *
+     * @param AttributeValue $attrValue
+     */
+    public function attrValueWhiteList(AttributeValue $attrValue)
+    {
+        $this->attrValueWhiteList[] = $attrValue;
+    }
+
     protected function tokenizeAndClean($dirtyHtml, $encoding)
     {
         $dom = new \DOMDocument();
@@ -109,19 +132,79 @@ class Purifier
                                 break;
                             }
                         }
+                        if (!$keep) {
+                            break;
+                        }
+                        $keep = false;
                         foreach ($this->tagWhiteList as $tag) {
-                            if (!$tag->match($node->tagName)) {
-                                $keep = false;
+                            if ($tag->match($node->tagName)) {
+                                $keep = true;
                                 break;
                             }
                         }
-                        if ($keep) {
-                            foreach ($this->attrBlackList as $attr) {
-                                $attr->filter($node, true);
+                        if ($keep || empty($this->tagWhiteList)) {
+                            $removeAttrs = [];
+                            foreach ($node->attributes as $attribute) {
+                                $keep = true;
+                                foreach ($this->attrBlackList as $attr) {
+                                    if ($attr->tagMatch($node->tagName) && $attr->match($attribute->name)) {
+                                        $keep = false;
+                                        break;
+                                    }
+                                }
+                                if (!$keep) {
+                                    $removeAttrs[] = $attribute->name;
+                                    continue;
+                                }
+                                $keep = false;
+                                $tagNotMatchCount = 0;
+                                foreach ($this->attrWhiteList as $attr) {
+                                    if ($attr->tagMatch($node->tagName)) {
+                                        if ($attr->match($attribute->name)) {
+                                            $keep = true;
+                                            break;
+                                        }
+                                    } else {
+                                        $tagNotMatchCount++;
+                                    }
+                                }
+                                if (!$keep && count($this->attrWhiteList) != $tagNotMatchCount) {
+                                    $removeAttrs[] = $attribute->name;
+                                    continue;
+                                }
+
+                                $keep = true;
+                                foreach ($this->attrValueBlackList as $attrValue) {
+                                    if ($attrValue->attrMatch($attribute) && $attrValue->match($attribute->value) !== false) {
+                                        $attrValue->remove($attribute);
+                                        $keep = false;
+                                        break;
+                                    }
+                                }
+                                if ($keep && !empty($this->attrValueWhiteList)) {
+                                    $validValues = [];
+                                    $attrNotMatch = 0;
+                                    foreach ($this->attrValueWhiteList as $attrValue) {
+                                        if ($attrValue->attrMatch($attribute)) {
+                                            $matchValue = $attrValue->match($attribute->value);
+                                            if ($matchValue !== false) {
+                                                $validValues[] = $matchValue;
+                                            }
+                                        } else {
+                                            $attrNotMatch++;
+                                        }
+                                    }
+                                    if (!empty($validValues)) {
+                                        $attribute->value = implode(' ', $validValues);
+                                    } elseif (count($this->attrValueWhiteList) != $attrNotMatch) {
+                                        $attribute->value = '';
+                                    }
+                                }
                             }
-                            foreach ($this->attrWhiteList as $attr) {
-                                $attr->filter($node, false);
+                            foreach ($removeAttrs as $attrName) {
+                                $node->removeAttribute($attrName);
                             }
+
                             if (in_array($node->tagName, $this->selfClosingTags)) {
                                 $token = new TagEmpty($node);
                             } else {

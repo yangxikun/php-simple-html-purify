@@ -8,46 +8,62 @@ class AttributeValue
 
     protected $values;
 
+    protected $attr;
+
     /**
      * @param string|array $values
      * @param bool|false $regex if true, $values will be used as regular expressions
+     * @param Attribute|null belong to which attribute
      */
-    public function __construct($values, $regex = false)
+    public function __construct($values, $regex = false, Attribute $attr = null)
     {
         $this->values = is_array($values) ? $values : [$values];
         $this->regex  = $regex;
+        $this->attr   = $attr;
     }
 
-    public function filter(\DOMAttr $attr, $black)
+    public function attrMatch(\DOMAttr $attr)
+    {
+        if (!$this->attr) {
+            return true;
+        }
+
+        if (!$this->attr->tagMatch($attr->ownerElement->tagName) || !$this->attr->match($attr->name)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function match($attrValue)
     {
         if ($this->regex) {
-            if ($black) {
-                foreach ($this->values as $value) {
-                    $attr->value = preg_replace($value, '', $attr->value);
+            $matches = [];
+            foreach ($this->values as $valuePattern) {
+                if (preg_match($valuePattern, $attrValue, $matches) === 1) {
+                    return $matches[0];
                 }
-            } else {
-                $validValues = '';
-                foreach ($this->values as $value) {
-                    $matches = [];
-                    if (preg_match($value, $attr->value, $matches) === 1) {
-                        $validValues .= "{$matches[0]} ";
-                    }
-                }
-                $attr->value = trim($validValues);
             }
         } else {
-            if ($black) {
-                foreach ($this->values as $value) {
-                    $attr->value = str_replace($value, '', $attr->value);
+            foreach ($this->values as $value) {
+                if (strpos($attrValue, $value) !== false) {
+                    return $value;
                 }
-            } else {
-                $validValues = '';
-                foreach ($this->values as $value) {
-                    if (strpos($attr->value, $value) !== false) {
-                        $validValues .= "{$value} ";
-                    }
-                }
-                $attr->value = trim($validValues);
+            }
+        }
+
+        return false;
+    }
+
+    public function remove(\DOMAttr $attr)
+    {
+        if ($this->regex) {
+            foreach ($this->values as $value) {
+                $attr->value = preg_replace($value, '', $attr->value);
+            }
+        } else {
+            foreach ($this->values as $value) {
+                $attr->value = str_replace($value, '', $attr->value);
             }
         }
     }

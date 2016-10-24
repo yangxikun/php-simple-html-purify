@@ -224,6 +224,11 @@ class Purifier
                         $queue->enqueue($childNode);
                     }
                     $nodes[$level] = $queue;
+                } else {
+                    if (!empty($closingNodes[$level])) {
+                        $token = array_pop($closingNodes[$level]);
+                        $tokens[] = new TagEnd($token);
+                    }
                 }
             }
             if (isset($closingNodes[$level])) {

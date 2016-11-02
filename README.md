@@ -1,6 +1,10 @@
 # php-simple-html-purify
 A php simple html purify. This library doesn't apply any HTML specification. You should configure all rules by yourself.
 
+### install
+
+`composer require rokety/php-simple-html-purify`
+
 ### How it works
 
 ```

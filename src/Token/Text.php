@@ -8,7 +8,7 @@ class Text
 
     public function __construct(\DOMNode $node)
     {
-        $this->content = $node->wholeText;
+        $this->content = htmlspecialchars($node->wholeText);
     }
 
     public function __toString()

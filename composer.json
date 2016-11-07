@@ -1,6 +1,7 @@
 {
     "name": "rokety/php-simple-html-purify",
     "description": "Another htmlpurify for php. It is simple to use.",
+    "keywords": ["html", "purify", "htmlpurify"],
     "type": "library",
     "license": "MIT",
     "authors": [
